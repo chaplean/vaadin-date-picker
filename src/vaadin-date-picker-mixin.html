@@ -509,7 +509,8 @@ This program is available under Apache License Version 2.0, available at https:/
 
     _openedChanged(opened) {
       if (!opened) {
-        return;
+          this.dispatchEvent(new CustomEvent('blur', {bubbles: true}));
+          return;
       }
 
       this._updateAlignmentAndPosition();
