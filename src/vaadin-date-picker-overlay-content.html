@@ -152,6 +152,10 @@ This program is available under Apache License Version 2.0, available at https:/
         flex-shrink: 0;
       }
 
+      [part="toolbar"].hidden {
+        display: none;
+      }
+
       [part~="overlay-header"]:not([desktop]) {
         padding-bottom: 40px;
       }
@@ -309,7 +313,12 @@ This program is available under Apache License Version 2.0, available at https:/
             /**
              * Input label
              */
-            label: String
+            label: String,
+
+            withoutToolbar: {
+              type: Boolean,
+              value: true
+            }
           };
         }
 
@@ -320,6 +329,11 @@ This program is available under Apache License Version 2.0, available at https:/
           Polymer.Gestures.addListener(this, 'tap', this._stopPropagation);
           this.addEventListener('focus', this._onOverlayFocus.bind(this));
           this.addEventListener('blur', this._onOverlayBlur.bind(this));
+
+          if (this.withoutToolbar) {
+            const toolbar = Polymer.dom(this.root).querySelector('[part="toolbar"]');
+            toolbar.classList.add('hidden');
+          }
         }
 
         /**

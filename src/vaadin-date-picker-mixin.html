@@ -196,27 +196,33 @@ This program is available under Apache License Version 2.0, available at https:/
               clear: 'Clear',
               today: 'Today',
               cancel: 'Cancel',
-              formatDate: d => {
-                const yearStr = String(d.year).replace(/\d+/, y => '0000'.substr(y.length) + y);
-                return [d.month + 1, d.day, yearStr].join('/');
+              formatDate: function(d, locale) {
+                if (Intl && Intl.DateTimeFormat) {
+                  return new Intl.DateTimeFormat(locale).format(Date.UTC(d.year, d.month, d.day));
+                } else {
+                  const yearStr = String(d.year).replace(/\d+/, y => '0000'.substr(y.length) + y);
+                  return [d.month + 1, d.day, yearStr].join('/');
+                }
               },
-              parseDate: text => {
-                const parts = text.split('/');
+              parseDate: function(format, text) {
+                const rd = /^(\d{0,4})?\W*(\d{0,4})?\W*(\d{0,4})?/g;
+                const parts = rd.exec(text);
                 const today = new Date();
                 let date, month = today.getMonth(), year = today.getFullYear();
 
-                if (parts.length === 3) {
-                  year = parseInt(parts[2]);
-                  if (parts[2].length < 3 && year >= 0) {
-                    year += year < 50 ? 2000 : 1900;
+                if (parts.length === 4) {
+                  if (parts[format.d]) {
+                    date = parseInt(parts[format.d]);
                   }
-                  month = parseInt(parts[0]) - 1;
-                  date = parseInt(parts[1]);
-                } else if (parts.length === 2) {
-                  month = parseInt(parts[0]) - 1;
-                  date = parseInt(parts[1]);
-                } else if (parts.length === 1) {
-                  date = parseInt(parts[0]);
+                  if (parts[format.m]) {
+                    month = parseInt(parts[format.m]) - 1;
+                  }
+                  if (parts[format.y]) {
+                    year = parseInt(parts[format.y]);
+                    if (parts[format.y].length < 3 && year >= 0) {
+                      year += year < 50 ? 2000 : 1900;
+                    }
+                  }
                 }
 
                 if (date !== undefined) {
@@ -256,6 +262,36 @@ This program is available under Apache License Version 2.0, available at https:/
         max: {
           type: String,
           observer: '_maxChanged'
+        },
+
+        locale: {
+          type: String,
+          value: () => {
+            if (Intl) {
+              return (Intl
+                  && Intl.DateTimeFormat
+                  && Intl.DateTimeFormat().resolvedOptions
+                  && Intl.DateTimeFormat().resolvedOptions().locale)
+                  || 'en-US';
+            }
+
+            return 'en-US';
+          }
+        },
+
+        format: {
+          type: String,
+          value: 'mm/dd/yyyy'
+        },
+
+        _format: {
+          type: Object,
+          value: {y: 3, m: 1, d: 2}
+        },
+
+        firstDayOfWeek: {
+          type: Number,
+          value: 0
         },
 
         /**
@@ -315,6 +351,59 @@ This program is available under Apache License Version 2.0, available at https:/
       this._overlayContent.addEventListener('focus-input', this._focusAndSelect.bind(this));
       this.addEventListener('input', this._onUserInput.bind(this));
       this.addEventListener('focus', e => this._noInput && e.target.blur());
+      this._computeFormat();
+
+      this.i18n.firstDayOfWeek = this.firstDayOfWeek;
+      try {
+        this.i18n.monthNames = this._computeLongMonthsName(this.locale);
+        this.i18n.weekdays = this._computeWeekdaysName(this.locale, 'long');
+        this.i18n.weekdaysShort = this._computeWeekdaysName(this.locale, 'short');
+      } catch (e) {
+        // ignore override
+      }
+    }
+
+    _computeLongMonthsName(locale) {
+      const format = new Intl.DateTimeFormat(locale, {month: 'long'});
+      const months = [];
+
+      for (let month = 0; month < 12; month++) {
+        const testDate = new Date(Date.UTC(2000, month, 1, 0, 0, 0));
+        months.push(format.format(testDate));
+      }
+
+      return months;
+    }
+
+    _computeWeekdaysName(locale, mode) {
+      const format = new Intl.DateTimeFormat(locale, {weekday: mode});
+      // sunday
+      const date = new Date(Date.UTC(1970, 0, 4));
+      const weekdays = [];
+
+      for (let day = 0; day < 7; day++) {
+        weekdays.push(format.format(date));
+        date.setDate(date.getDate() + 1);
+      }
+
+      return weekdays;
+    }
+
+    _computeFormat() {
+      const re = /^(yyyy|yy|m{1,4}|d{1,2}|do)\W+(yyyy|yy|m{1,4}|d{1,2}|do)\W+(yyyy|yy|m{1,4}|d{1,2}|do)$/g;
+      const parts = re.exec(this.format);
+
+      if (parts.length === 4) {
+        for (let i = 1; i < 4; i++) {
+          if (parts[i].indexOf('d') !== -1) {
+            this._format.d = i;
+          } else if (parts[i].indexOf('m') !== -1) {
+            this._format.m = i;
+          } else if (parts[i].indexOf('y') !== -1) {
+            this._format.y = i;
+          }
+        }
+      }
     }
 
     /**
@@ -437,7 +526,7 @@ This program is available under Apache License Version 2.0, available at https:/
       this.__userInputOccurred = false;
       this.__dispatchChange = false;
       this._focusedDate = selectedDate;
-      this._inputValue = selectedDate ? formatDate(Vaadin.DatePickerHelper._extractDateParts(selectedDate)) : '';
+      this._inputValue = selectedDate ? formatDate(Vaadin.DatePickerHelper._extractDateParts(selectedDate), this.locale) : '';
     }
 
     _focusedDateChanged(focusedDate, formatDate) {
@@ -446,7 +535,7 @@ This program is available under Apache License Version 2.0, available at https:/
       }
       this.__userInputOccurred = true;
       if (!this._ignoreFocusedDateChange && !this._noInput) {
-        this._inputValue = focusedDate ? formatDate(Vaadin.DatePickerHelper._extractDateParts(focusedDate)) : '';
+        this._inputValue = focusedDate ? formatDate(Vaadin.DatePickerHelper._extractDateParts(focusedDate), this.locale) : '';
       }
     }
 
@@ -610,8 +699,8 @@ This program is available under Apache License Version 2.0, available at https:/
       // Select the parsed input or focused date
       this._ignoreFocusedDateChange = true;
       if (this.i18n.parseDate) {
-        var inputValue = this._inputValue || '';
-        const dateObject = this.i18n.parseDate(inputValue);
+        const inputValue = this._inputValue || '';
+        const dateObject = this.i18n.parseDate(this._format, inputValue);
         const parsedDate = dateObject &&
           this._parseDate(`${dateObject.year}-${dateObject.month + 1}-${dateObject.day}`);
 
@@ -655,7 +744,7 @@ This program is available under Apache License Version 2.0, available at https:/
      */
     checkValidity(value) {
       var inputValid = !value ||
-        (this._selectedDate && value === this.i18n.formatDate(Vaadin.DatePickerHelper._extractDateParts(this._selectedDate)));
+        (this._selectedDate && value === this.i18n.formatDate(Vaadin.DatePickerHelper._extractDateParts(this._selectedDate), this.locale));
       var minMaxValid = !this._selectedDate ||
         Vaadin.DatePickerHelper._dateAllowed(this._selectedDate, this._minDate, this._maxDate);
 
@@ -790,7 +879,7 @@ This program is available under Apache License Version 2.0, available at https:/
 
     _userInputValueChanged(value) {
       if (this.opened && this._inputValue) {
-        const dateObject = this.i18n.parseDate && this.i18n.parseDate(this._inputValue);
+        const dateObject = this.i18n.parseDate && this.i18n.parseDate(this._format, this._inputValue);
         const parsedDate = dateObject &&
           this._parseDate(`${dateObject.year}-${dateObject.month + 1}-${dateObject.day}`);
 
