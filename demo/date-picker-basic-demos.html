@@ -11,7 +11,13 @@
     <vaadin-demo-snippet id="date-picker-basic-demos-plain-date-picker">
       <template preserve-content>
         <vaadin-date-picker first-day-of-week="1" locale="fr-FR" format="dd/mm/yyyy" without-toolbar></vaadin-date-picker>
-        <vaadin-date-picker></vaadin-date-picker>
+
+        <vaadin-date-picker-light first-day-of-week="1" locale="fr-FR" format="dd/mm/yyyy">
+          <!--<iron-input>-->
+            <input part="value" type="text">
+          <!--</iron-input>-->
+        </vaadin-date-picker-light>
+        <!--<vaadin-date-picker></vaadin-date-picker>-->
       </template>
     </vaadin-demo-snippet>
 

@@ -565,7 +565,7 @@ This program is available under Apache License Version 2.0, available at https:/
 
     _valueChanged(value, oldValue) {
       if (this.__dispatchChange) {
-        this.dispatchEvent(new CustomEvent('change', {bubbles: true}));
+        this.dispatchEvent(new CustomEvent('change', {detail: {date: this.i18n.formatDate(this.i18n.parseDate({y: 1, m: 2, d: 3}, value), this.locale)}, bubbles: true}));
       }
       this._handleDateChange('_selectedDate', value, oldValue);
     }

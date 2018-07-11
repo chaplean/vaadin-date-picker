@@ -111,7 +111,7 @@ This program is available under Apache License Version 2.0, available at https:/
              */
             attrForValue: {
               type: String,
-              value: 'bind-value'
+              value: 'value'
             }
           };
         }
@@ -119,17 +119,25 @@ This program is available under Apache License Version 2.0, available at https:/
         _input() {
           // Using the same selector than in combo-box.
           // TODO: revisit this to decide the selector and document conveniently.
-          return this.querySelector('vaadin-text-field,iron-input,paper-input,.paper-input-input,.input');
+          return this.querySelector('vaadin-text-field,iron-input,paper-input,.paper-input-input,input,.input');
         }
 
         set _inputValue(value) {
           if (this._inputElement) {
-            this._inputElement[Polymer.CaseMap.dashToCamelCase(this.attrForValue)] = value;
+            this._inputElement[this._getBind()] = value;
           }
         }
 
         get _inputValue() {
-          return this._inputElement && this._inputElement[Polymer.CaseMap.dashToCamelCase(this.attrForValue)];
+          return this._inputElement && this._inputElement[this._getBind()];
+        }
+
+        _getBind() {
+          if (this._inputElement.tagName === 'INPUT') {
+            return 'value';
+          } else {
+            return Polymer.CaseMap.dashToCamelCase(this.attrForValue);
+          }
         }
       }
 
