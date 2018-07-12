@@ -93,10 +93,6 @@
         box-shadow: 0 0 0 2px var(--lumo-primary-color-50pct);
       }
 
-      [part="date"][selected]::before {
-        box-shadow: 0 0 0 2px var(--border-color-date-selected, --lumo-primary-color-50pct);
-      }
-
       :host(:not([focused])) [part="date"][focused]::before {
         animation: vaadin-date-picker-month-calendar-focus-date 1.4s infinite;
       }
@@ -113,6 +109,7 @@
       }
 
       [part="date"][selected] {
+        box-shadow: 0 0 0 2px var(--border-color-date-selected, --lumo-primary-color-50pct);
         color: var(--lumo-primary-contrast-color);
       }
 
