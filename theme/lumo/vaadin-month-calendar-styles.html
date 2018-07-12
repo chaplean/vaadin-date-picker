@@ -93,9 +93,8 @@
         box-shadow: 0 0 0 2px var(--lumo-primary-color-50pct);
       }
 
-
-      [part="date"][focused]::before {
-        box-shadow: 0 0 0 2px var(--lumo-primary-color-50pct);
+      [part="date"][selected]::before {
+        box-shadow: 0 0 0 2px var(--border-color-date-selected, --lumo-primary-color-50pct);
       }
 
       :host(:not([focused])) [part="date"][focused]::before {
